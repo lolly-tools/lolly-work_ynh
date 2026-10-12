@@ -6,7 +6,7 @@
 # shapes and mirrored to github.com/lolly-tools/lolly-work_ynh at release time.
 #
 # The release-pinned fields (version, both sources' url + sha256) are written by
-# `npm run release:yunohost`, which builds the server tarball and reads the web
+# `pnpm run release:yunohost`, which builds the server tarball and reads the web
 # shell's pin from the Lolly repository. Do not hand-edit them.
 
 packaging_format = 2
@@ -16,7 +16,7 @@ name = "Lolly Work"
 description.en = "Governed Lolly for a team: one brand, locked tool inputs, approvals and audit, signed in with your YunoHost accounts"
 description.fr = "Lolly gouverné pour une équipe : une marque, des outils verrouillés, approbations et audit, connexion avec vos comptes YunoHost"
 
-version = "0.2.0~ynh1"
+version = "1.1.0~ynh3"
 
 maintainers = ["Andy Fitzsimon"]
 
@@ -47,11 +47,9 @@ ram.runtime = "512M"
     type = "domain"
     # The control plane and the web shell it serves resolve every route from the
     # domain root (/admin, /api, /render, the shell's assets and service worker).
-    full_domain = true
+    # Omitting an install.path question reserves the whole domain.
 
     [install.admin]
-    ask.en = "First owner"
-    ask.fr = "Premier propriétaire"
     help.en = "This YunoHost user gets the owner role: they can change instance settings and connect brand sources. Owners, admins, approvers and authors are YunoHost permissions of this app afterwards (Users › Groups and permissions)."
     help.fr = "Cet utilisateur YunoHost obtient le rôle propriétaire : réglages de l'instance et connexion des sources de marque. Ensuite, propriétaires, admins, approbateurs et auteurs sont des permissions YunoHost de cette app (Utilisateurs › Groupes et permissions)."
     type = "user"
@@ -78,10 +76,10 @@ ram.runtime = "512M"
 
     [resources.sources.main]
     # The control plane at a release tag (server, console, vendored engine, docs),
-    # without node_modules: the install script runs `npm ci --omit=dev`. Built and
+    # without node_modules: the install script runs `pnpm install --frozen-lockfile --prod`. Built and
     # published by scripts/yunohost-release.ts; see deploy/yunohost/README.md.
-    url = "https://lolli.li/lolly-work-0.2.0.tar.gz"
-    sha256 = "0e42e12bd7057c935f2b972d7356c8750d7137d3954feac09fde08939bb933ab"
+    url = "https://lolli.li/lolly-work-1.1.0-ynh3.tar.gz"
+    sha256 = "e7b70e269b261bfed4bc5f7c6dce69eec84885ce2b0bf9335143a1cc3ff2efbb"
     format = "tar.gz"
     in_subdir = true
 
@@ -91,8 +89,8 @@ ram.runtime = "512M"
     # the build carries the full community tool set and catalog, also the initial
     # instance pack. The same tarball the `lolly` YunoHost app installs; its pin is
     # copied from that package's manifest.
-    url = "https://lolli.li/lolly-web-1.0.7.tar.gz"
-    sha256 = "df33c333e19d944391798c5d8ac678727bfe543aa1fa7c3a34c9086092658d13"
+    url = "https://lolli.li/lolly-web-1.1.0-ynh3.tar.gz"
+    sha256 = "8bc8121a68e6fee6dda3902ed48d5e2669353bcfd101ca3822990235a2099376"
     format = "tar.gz"
     in_subdir = false
 
@@ -133,7 +131,7 @@ ram.runtime = "512M"
     # server authenticates every one of these itself (session cookie, service
     # token or link signature), so SSOwat passes them through untouched.
     api.url = "/api"
-    api.additional_urls = ["/scim", "/healthz", "/metrics", "re:/l/.*", "re:/render/.*", "re:/connect/.*"]
+    api.additional_urls = ["/scim", "/healthz", "/readyz", "/metrics", "/l", "/render", "/connect", "/ws"]
     api.allowed = "visitors"
     api.show_tile = false
     api.auth_header = false
@@ -147,6 +145,9 @@ ram.runtime = "512M"
     admin.show_tile = false
     approver.show_tile = false
     author.show_tile = false
+
+    [resources.apt]
+    packages = "postgresql"
 
     [resources.database]
     type = "postgresql"
