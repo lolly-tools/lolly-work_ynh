@@ -2,8 +2,10 @@
 
 [YunoHost](https://yunohost.org) package for Lolly Work: a governed Lolly instance for a team, signed in with the host's own accounts. See [`doc/DESCRIPTION.md`](doc/DESCRIPTION.md) for what it is and [`doc/ADMIN.md`](doc/ADMIN.md) for how it is wired.
 
+For a fresh `1.1.1~ynh1` beta installation, use the tagged package:
+
 ```bash
-sudo yunohost app install https://github.com/lolly-tools/lolly-work_ynh
+sudo yunohost app install https://github.com/lolly-tools/lolly-work_ynh/tree/v1.1.1-ynh1
 ```
 
 This directory is developed inside the Lolly Work repository at `deploy/yunohost/`, beside the Compose and Helm shapes, and mirrored to `lolly-tools/lolly-work_ynh` at release time. Fix things here, not in the mirror.
@@ -12,24 +14,30 @@ The deployment qualification workflow runs a pinned official package linter. It
 blocks package/schema/script errors and reports catalog registration and working
 status separately, since those belong to publishing the mirror. Repository
 contracts also exercise SSO/LDAP role mapping and rendered configuration. A real
-Linux `package_check` install/upgrade/backup/restore run is still required before
-qualifying a release; see the [cloud deployment guide](../../docs/cloud-deployment.md#yunohost-qualification).
+Linux `package_check` run establishes installation/upgrade/backup/restore results;
+see the [cloud deployment guide](../../docs/cloud-deployment.md#yunohost-qualification).
 
-The `1.1.0~ynh3` package is a test candidate. Its server is the matched Work
-`464ac88d4498b00985dfbcdb47dd96655425f426` source, with Lolly
-`0359d8106bccbd1da56b5552605199f0bf705472` and engine `1.259`. The neutral,
-signed web shell loads models from `https://lolli.li`. Source CI and archive
-checks have passed; a successful installation, upgrade and backup/restore on
-YunoHost has not yet been established. Treat it as beta until the exact mirrored
-package passes the runtime workflow below. That workflow tests `amd64` on Debian
-Bookworm; `arm64` needs separate runtime qualification.
+The `1.1.1~ynh1` package is a beta test candidate. Its server is Work 1.1.1,
+archived from `c2036a85c53c76bd8b7917a05aef41268103e2b3` and released as tag
+`v1.1.1`, with Lolly `26cf05324f46dc4cacd65d12d6f454ada181fb5e` and engine `1.261`.
+The neutral, signed web shell loads models from `https://lolli.li`. Source CI and
+archive checks passed. Its runtime results are added here after the
+`yunohost-runtime.yml` run on the mirror commit; until then the package is not
+runtime-qualified. The upgrade test starts from the `1.1.0~ynh3` package, and
+`arm64` installation remains unqualified. There is no catalog promotion. Keep a
+verified backup and complete a restore test before upgrading an existing instance.
+
+The previous `1.1.0~ynh3` candidate passed six runtime checks on `amd64` Debian
+Bookworm in [run 38284099878](https://github.com/lolly-tools/lolly-work/actions/runs/38284099878).
+Its seventh check failed while installing the historical `0.2.0~ynh1` package,
+which is why the upgrade baseline moved to `1.1.0~ynh3`.
 
 ## Shape
 
 - **One service, one database.** Node 24 (YunoHost's `nodejs` resource) runs `server/src/main.ts` behind the domain's nginx; PostgreSQL from the `database` resource; migrations at boot.
 - **Two sources.** `main` is this repository at the release tag (no `node_modules`; the install runs `pnpm install --frozen-lockfile --prod`). `shell` is the Lolly web app build the open-source `lolly` YunoHost package installs, served at `/` and seeded as the instance pack.
 - **YunoHost SSO, no passwords.** `proxyAuth` in the server (docs/identity.md, "Reverse-proxy sign-in"): SSOwat's `YNH_USER` / `YNH_USER_EMAIL` / `YNH_USER_FULLNAME` headers plus a shared secret nginx injects, and an anonymous read of the host's LDAP for groups and this app's role permissions.
-- **Whole domain**, `multi_instance`, `amd64` + `arm64`.
+- **Whole domain**, `multi_instance`; declared architectures `amd64` + `arm64`, with beta runtime checks completed on `amd64` only.
 
 ## Cutting a release
 
@@ -55,13 +63,13 @@ cd /tmp/lolly-work_ynh && git add -A && git commit -m "Lolly Work <ver>~ynh1" &&
 
 Both tarballs must be live on lolli.li first: the manifest's checksums are verified at install.
 
-For `1.1.0~ynh3`, generate the pins with the maintained producer on a clean
+For `1.1.1~ynh1`, generate the pins with the maintained producer on a clean
 committed source tree:
 
 ```bash
-node scripts/yunohost-release.ts --ynh-rev 3 \
-  --shell-url https://lolli.li/lolly-web-1.1.0-ynh3.tar.gz \
-  --shell-sha256 8bc8121a68e6fee6dda3902ed48d5e2669353bcfd101ca3822990235a2099376
+node scripts/yunohost-release.ts --ynh-rev 1 \
+  --shell-url https://lolli.li/lolly-web-1.1.1-ynh1.tar.gz \
+  --shell-sha256 bc78012aa407983ecc818e63be98ae1b45ed7db1dcad3f4c8d4ffe0c371116c1
 ```
 
 Commit the generated manifest, recut the archive, and require the same archive
@@ -77,14 +85,14 @@ the manual workflow in `lolly-tools/lolly-work` with that exact commit and versi
 MIRROR_COMMIT='<reviewed full commit in lolly-tools/lolly-work_ynh>'
 [[ "$MIRROR_COMMIT" =~ ^[0-9a-f]{40}$ ]]
 gh workflow run yunohost-runtime.yml --repo lolly-tools/lolly-work --ref main \
-  --field package_commit="$MIRROR_COMMIT" --field package_version='1.1.0~ynh3'
+  --field package_commit="$MIRROR_COMMIT" --field package_version='1.1.1~ynh1'
 ```
 
 The workflow uses a fresh Ubuntu runner and the official Incus package checker.
 It requires successful root and multiple-instance installation, upgrade,
 backup/restore and URL-change results for the selected package. `tests.toml`
-also covers upgrading from mirror commit
-`db60f651fbeb561e4b330a1dd44bd4aaf463e635` (`0.2.0~ynh1`). Its original logs and
+also upgrades from mirror commit
+`583cdc4af5322e683991a548428859b79084db2d` (`1.1.0~ynh3`). Its original logs and
 checker revisions are uploaded even on failure; preserve those results when
 reporting candidate status.
 
